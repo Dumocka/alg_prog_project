@@ -1,53 +1,175 @@
-# Testing Platform
+# Распределенная Платформа для Тестирования и Опросов
 
-Distributed application for conducting mass surveys and testing.
+Это микросервисная платформа для проведения тестов и опросов с поддержкой веб-интерфейса и Telegram бота.
 
-## Project Structure
+## Архитектура
 
-- `core/` - Main testing logic module (Go)
-- `auth/` - Authorization module (C++)
-- `telegram-client/` - Telegram bot client (Python)
-- `web-client/` - Web interface (JavaScript/React)
+Система состоит из четырех основных компонентов:
 
-## Requirements
+### 1. Основной Сервис (Core Service)
+- Написан на Go
+- Отвечает за:
+  * Управление тестами и вопросами
+  * Обработку ответов
+  * Подсчет результатов
+  * Предоставление REST API
+- Использует PostgreSQL для хранения данных
+- Основные эндпоинты:
+  * `/api/tests` - создание и получение тестов
+  * `/api/tests/{id}/questions` - управление вопросами
+  * `/api/tests/{id}/answers` - прием ответов
+  * `/api/tests/{id}/results` - получение результатов
 
+### 2. Сервис Аутентификации (Auth Service)
+- Написан на C++
+- Отвечает за:
+  * Аутентификацию пользователей
+  * Управление токенами JWT
+  * Контроль доступа
+- Использует:
+  * PostgreSQL для хранения пользователей
+  * JWT для токенов
+  * SHA-256 для хеширования паролей
+
+### 3. Telegram Клиент
+- Написан на Python
+- Функции:
+  * Создание тестов через Telegram
+  * Прохождение тестов
+  * Получение результатов
+- Особенности:
+  * Удобный разговорный интерфейс
+  * Пошаговое создание тестов
+  * Интерактивные кнопки для ответов
+
+### 4. Веб Клиент
+- Написан на JavaScript/React
+- В процессе разработки
+
+## Технологический Стек
+
+- **Go**: Основной сервис
+  * Gin (веб-фреймворк)
+  * GORM (ORM)
+  * PostgreSQL драйвер
+  * Zap (логирование)
+
+- **C++**: Сервис аутентификации
+  * Restbed (HTTP фреймворк)
+  * libpqxx (PostgreSQL драйвер)
+  * JWT-CPP
+  * OpenSSL
+  * nlohmann/json
+
+- **Python**: Telegram бот
+  * python-telegram-bot
+  * aiohttp
+  * asyncio
+
+- **Инфраструктура**
+  * Docker/Docker Compose
+  * PostgreSQL
+  * Redis
+  * RabbitMQ
+
+## Установка и Запуск
+
+1. Клонируйте репозиторий:
+```bash
+git clone <repository-url>
+```
+
+2. Создайте файл `.env` с необходимыми переменными окружения:
+```env
+DATABASE_URL=postgresql://user:password@postgres:5432/testdb
+SERVER_ADDRESS=:8080
+AUTH_SERVICE_URL=http://auth:9000
+REDIS_URL=redis:6379
+RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+TELEGRAM_TOKEN=your_telegram_bot_token
+```
+
+3. Запустите сервисы через Docker Compose:
+```bash
+docker-compose up -d
+```
+
+## Безопасность
+
+- Все пароли хешируются с использованием SHA-256
+- Аутентификация через JWT токены
+- Механизм обновления токенов
+- Контроль доступа на основе ролей
+- Безопасная генерация и валидация токенов
+
+## API Документация
+
+### Core Service API
+
+#### Тесты
+- `POST /api/tests` - Создание нового теста
+- `GET /api/tests` - Получение списка тестов
+- `GET /api/tests/{id}` - Получение конкретного теста
+- `PUT /api/tests/{id}` - Обновление теста
+- `DELETE /api/tests/{id}` - Удаление теста
+
+#### Вопросы
+- `POST /api/tests/{id}/questions` - Добавление вопроса
+- `GET /api/tests/{id}/questions` - Получение вопросов теста
+- `PUT /api/tests/{id}/questions/{qid}` - Обновление вопроса
+- `DELETE /api/tests/{id}/questions/{qid}` - Удаление вопроса
+
+#### Ответы и Результаты
+- `POST /api/tests/{id}/answers` - Отправка ответов
+- `GET /api/tests/{id}/results` - Получение результатов
+
+### Auth Service API
+
+- `POST /auth/register` - Регистрация пользователя
+- `POST /auth/login` - Вход в систему
+- `POST /auth/refresh` - Обновление токена
+- `GET /auth/verify` - Проверка токена
+
+## Telegram Бот
+
+Бот поддерживает следующие команды:
+- `/start` - Начало работы с ботом
+- Создание теста:
+  * Ввод названия
+  * Ввод описания
+  * Добавление вопросов
+- Прохождение теста:
+  * Выбор теста из списка
+  * Ответы на вопросы
+  * Получение результатов
+
+## Разработка
+
+### Необходимые инструменты
 - Go 1.20+
 - C++ 17
 - Python 3.9+
-- Node.js 18+
-- PostgreSQL 14+
+- Docker и Docker Compose
+- PostgreSQL 14
 - Redis
+- RabbitMQ
 
-## Architecture
+### Структура проекта
+```
+testing-platform/
+├── core/                 # Go сервис
+├── auth/                 # C++ сервис
+├── telegram-client/      # Python Telegram бот
+├── web-client/          # React приложение
+├── docker-compose.yml
+└── README.md
+```
 
-The application is designed as a microservices architecture with the following components:
+## План Развития
 
-1. Core Module (Go):
-   - Resource management (users, tests, questions, answers)
-   - Access control
-   - Business logic implementation
-   - REST API
-
-2. Auth Module (C++):
-   - User rights management
-   - Permission validation
-   - Authentication proxy
-   - OAuth2 integration
-
-3. Telegram Client (Python):
-   - Telegram Bot API integration
-   - User interaction handling
-   - Content adaptation for Telegram
-
-4. Web Client (JavaScript/React):
-   - Single Page Application
-   - Responsive UI
-   - Real-time updates
-
-## Communication
-
-Services communicate via REST APIs and message queues (RabbitMQ) for asynchronous operations.
-
-## Deployment
-
-The application supports horizontal scaling through containerization (Docker) and orchestration (Kubernetes).
+1. Завершение веб-клиента
+2. Добавление аналитики тестов
+3. Улучшение системы безопасности
+4. Добавление поддержки медиа-файлов
+5. Интеграция с другими мессенджерами
+6. Добавление системы уведомлений
