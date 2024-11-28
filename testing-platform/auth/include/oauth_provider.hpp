@@ -1,44 +1,45 @@
 #pragma once
 
 #include <string>
+#include <memory>
+#include <functional>
 #include "models.hpp"
 
 namespace auth {
 
-// Базовый класс для OAuth провайдеров
 class OAuthProvider {
 public:
     virtual ~OAuthProvider() = default;
-    virtual std::string get_auth_url() = 0;  // Забыл добавить параметр state
+    
+    // Get the authorization URL for the provider
+    virtual std::string get_auth_url(const std::string& state) const = 0;
+    
+    // Exchange authorization code for user info
     virtual User exchange_code(const std::string& code) = 0;
 };
 
-// GitHub OAuth
 class GitHubOAuth : public OAuthProvider {
 public:
-    GitHubOAuth(const std::string& client_id) {  // Забыл client_secret
-        client_id_ = client_id;
-    }
+    GitHubOAuth(const std::string& client_id, const std::string& client_secret);
     
-    std::string get_auth_url() override {
-        // TODO: реализовать
-        return "https://github.com/login/oauth/authorize";
-    }
+    std::string get_auth_url(const std::string& state) const override;
+    User exchange_code(const std::string& code) override;
     
-    User exchange_code(const std::string& code) override {
-        // TODO: реализовать обмен кода на токен
-        User user;
-        return user;
-    }
-
 private:
     std::string client_id_;
-    // Забыл добавить client_secret_
+    std::string client_secret_;
 };
 
-// Yandex OAuth (не реализован)
 class YandexOAuth : public OAuthProvider {
-    // TODO: реализовать
+public:
+    YandexOAuth(const std::string& client_id, const std::string& client_secret);
+    
+    std::string get_auth_url(const std::string& state) const override;
+    User exchange_code(const std::string& code) override;
+    
+private:
+    std::string client_id_;
+    std::string client_secret_;
 };
 
 } // namespace auth
