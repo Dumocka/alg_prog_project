@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 #include <nlohmann/json.hpp>
 
 namespace auth {
@@ -14,17 +15,27 @@ struct User {
     std::string name;            // Имя пользователя
     std::string password_hash;   // Хеш пароля
     std::string created_at;      // Дата создания
+    std::vector<std::string> roles;          // Роли пользователя
+    std::vector<std::string> refresh_tokens; // Токены обновления
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(User, id, email, name, created_at)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(User, id, email, name, password_hash, created_at, roles, refresh_tokens)
 };
 
-// Структура роли пользователя
-struct Role {
-    int64_t id;                         // Уникальный идентификатор роли
-    std::string name;                   // Название роли
-    std::vector<std::string> permissions; // Список разрешений
+// Структура разрешения
+struct Permission {
+    std::string resource;     // Например: "user", "course"
+    std::string action;       // Например: "read", "write"
+    std::string scope;        // Например: "own", "all"
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Role, id, name, permissions)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Permission, resource, action, scope)
+};
+
+// Структура роли
+struct Role {
+    std::string name;                   // Название роли
+    std::vector<Permission> permissions; // Список разрешений
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Role, name, permissions)
 };
 
 // Связь пользователя и роли
@@ -59,6 +70,24 @@ struct PermissionCheck {
     std::string action;     // Действие для проверки
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(PermissionCheck, user_id, resource, action)
+};
+
+// Структура для JWT payload
+struct JWTPayload {
+    std::string email;
+    std::vector<std::string> permissions;
+    int64_t exp;  // Время истечения токена
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(JWTPayload, email, permissions, exp)
+};
+
+// Структура для ответа OAuth провайдера
+struct OAuthUserInfo {
+    std::string email;
+    std::string name;
+    std::optional<std::string> avatar_url;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(OAuthUserInfo, email, name, avatar_url)
 };
 
 } // namespace auth

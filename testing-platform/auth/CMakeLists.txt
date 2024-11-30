@@ -1,63 +1,67 @@
-cmake_minimum_required(VERSION 3.10)
-project(auth)
+cmake_minimum_required(VERSION 3.15)
+project(auth VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Dependencies
-find_package(Boost REQUIRED COMPONENTS system)
+# Опции сборки
+option(BUILD_TESTS "Build tests" ON)
+option(BUILD_EXAMPLES "Build examples" OFF)
+
+# Зависимости
 find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(cpp_redis REQUIRED)
+find_package(jwt-cpp REQUIRED)
+find_package(libpqxx REQUIRED)
 
-# Source files
-set(SOURCES
-    src/auth_service.cpp
-    src/session_manager.cpp
+# Основная библиотека
+add_library(auth
+    src/authorization_server.cpp
+    src/jwt_manager.cpp
+    src/code_authentication.cpp
     src/oauth_provider.cpp
+    src/database.cpp
 )
 
-# Header files
-set(HEADERS
-    include/auth_service.hpp
-    include/session_manager.hpp
-    include/oauth_provider.hpp
-    include/models.hpp
-)
-
-# Library
-add_library(${PROJECT_NAME} ${SOURCES} ${HEADERS})
-
-target_include_directories(${PROJECT_NAME}
+target_include_directories(auth
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${Boost_INCLUDE_DIRS}
-        ${OPENSSL_INCLUDE_DIR}
-        ${CURL_INCLUDE_DIRS}
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(auth
     PUBLIC
         OpenSSL::SSL
         OpenSSL::Crypto
         CURL::libcurl
         nlohmann_json::nlohmann_json
         cpp_redis
-    PRIVATE
-        ${Boost_LIBRARIES}
-        pthread
+        jwt-cpp
+        libpqxx::pqxx
 )
 
-# Install targets
-install(TARGETS ${PROJECT_NAME}
+# Тесты
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# Примеры
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+# Установка
+install(TARGETS auth
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
 )
 
-install(FILES ${HEADERS}
-    DESTINATION include/${PROJECT_NAME}
+install(DIRECTORY include/
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.hpp"
 )
