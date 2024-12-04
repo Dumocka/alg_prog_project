@@ -2,14 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"time"
 	"testing-platform/core/internal/model"
+	"testing-platform/core/internal/errors"
 )
 
 var (
-	ErrUnauthorized = errors.New("unauthorized")
-	ErrNotFound     = errors.New("not found")
+	ErrNotFound = errors.ErrSessionNotFound
 )
 
 type Repository interface {
@@ -51,7 +50,7 @@ func (s *Service) GetTest(ctx context.Context, userID, testID int64) (*model.Tes
 			return nil, err
 		}
 		if role == "" {
-			return nil, ErrUnauthorized
+			return nil, errors.ErrUnauthorized
 		}
 	}
 
@@ -63,8 +62,8 @@ func (s *Service) AddQuestion(ctx context.Context, userID int64, question *model
 	if err != nil {
 		return err
 	}
-	if role != "owner" && role != "editor" {
-		return ErrUnauthorized
+	if role != "admin" && role != "creator" {
+		return errors.ErrUnauthorized
 	}
 
 	return s.repo.CreateQuestion(ctx, question)
@@ -82,7 +81,7 @@ func (s *Service) GetResults(ctx context.Context, userID, testID int64) (*model.
 		return nil, err
 	}
 	if role == "" {
-		return nil, ErrUnauthorized
+		return nil, errors.ErrUnauthorized
 	}
 
 	return s.repo.GetTestResults(ctx, testID, userID)
