@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Вход</h2>
+                    
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-info">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Имя пользователя</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Пароль</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary hover-scale">Войти</button>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('github.login') }}" class="btn btn-dark hover-scale">
+                            <i class="fab fa-github"></i> Войти через GitHub
+                        </a>
+                        <a href="{{ url_for('yandex.login') }}" class="btn btn-warning hover-scale">
+                            <i class="fab fa-yandex"></i> Войти через Яндекс
+                        </a>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <p class="mb-0">Нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрируйтесь</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.hover-scale {
+    transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.02);
+}
+
+.btn-warning {
+    background-color: #FFCC00;
+    border-color: #FFCC00;
+    color: #000;
+}
+
+.btn-warning:hover {
+    background-color: #E6B800;
+    border-color: #E6B800;
+    color: #000;
+}
+</style>
+{% endblock %}

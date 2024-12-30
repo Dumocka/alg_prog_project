@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ survey.title }}</h2>
+    <p>{{ survey.description }}</p>
+
+    <form method="POST" id="surveyForm">
+        {% for question in survey.questions %}
+        <div class="card mb-4 survey-card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ question.content }}</h5>
+            </div>
+            <div class="card-body">
+                {% if question.type == 'text' %}
+                <textarea name="answers[{{ loop.index0 }}][answer]" class="form-control" rows="3" required></textarea>
+                <input type="hidden" name="answers[{{ loop.index0 }}][type]" value="text">
+                
+                {% elif question.type == 'choice' %}
+                {% for option in question.options %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" 
+                           name="answers[{{ loop.index0 }}][answer]" 
+                           id="option_{{ loop.index0 }}_{{ loop.index }}"
+                           value="{{ option }}" required>
+                    <label class="form-check-label" for="option_{{ loop.index0 }}_{{ loop.index }}">
+                        {{ option }}
+                    </label>
+                </div>
+                {% endfor %}
+                <input type="hidden" name="answers[{{ loop.index0 }}][type]" value="choice">
+                
+                {% elif question.type == 'multiple' %}
+                {% for option in question.options %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" 
+                           name="answers[{{ loop.index0 }}][answer][]" 
+                           id="option_{{ loop.index0 }}_{{ loop.index }}"
+                           value="{{ option }}">
+                    <label class="form-check-label" for="option_{{ loop.index0 }}_{{ loop.index }}">
+                        {{ option }}
+                    </label>
+                </div>
+                {% endfor %}
+                <input type="hidden" name="answers[{{ loop.index0 }}][type]" value="multiple">
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary hover-effect">Отправить ответы</button>
+            <a href="{{ url_for('survey_results', survey_id=survey._id) }}" class="btn btn-info ms-2 hover-effect">Посмотреть результаты</a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary ms-2 hover-effect">Вернуться к списку</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.survey-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.survey-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.form-control {
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.form-check {
+    margin-bottom: 10px;
+    padding-left: 1.75rem;
+}
+
+.form-check-input {
+    cursor: pointer;
+}
+
+.form-check-label {
+    cursor: pointer;
+    padding-left: 0.5rem;
+}
+
+.hover-effect {
+    transition: all 0.3s ease;
+}
+
+.hover-effect:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border: none;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    border: none;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+}
+
+.btn {
+    padding: 8px 20px;
+    border-radius: 5px;
+}
+</style>
+
+<script>
+document.getElementById('surveyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const answers = [];
+    
+    // Группируем ответы по индексу вопроса
+    const answerMap = new Map();
+    for (let [key, value] of formData.entries()) {
+        if (key.startsWith('answers[')) {
+            const match = key.match(/answers\[(\d+)\]\[(answer|type)\]/);
+            if (match) {
+                const index = match[1];
+                const field = match[2];
+                if (!answerMap.has(index)) {
+                    answerMap.set(index, {});
+                }
+                if (field === 'answer' && key.includes('[]')) {
+                    if (!answerMap.get(index).answer) {
+                        answerMap.get(index).answer = [];
+                    }
+                    answerMap.get(index).answer.push(value);
+                } else {
+                    answerMap.get(index)[field] = value;
+                }
+            }
+        }
+    }
+    
+    // Преобразуем Map в массив ответов
+    answerMap.forEach((value) => {
+        answers.push(value);
+    });
+    
+    // Отправляем данные на сервер
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ answers: answers })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect || '/';
+        } else {
+            alert('Произошла ошибка при отправке ответов');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при отправке ответов');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4 fade-in">
+    <h2 class="mb-4">Редактирование опроса: {{ survey.title }}</h2>
+
+    <div id="questionContainer">
+        {% for question in survey.questions %}
+        <div class="card mb-4 question-block fade-in" style="animation-delay: {{ loop.index * 0.1 }}s">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Вопрос {{ loop.index }}</h5>
+                <button type="button" class="btn btn-danger btn-sm hover-scale" onclick="deleteQuestion({{ loop.index - 1 }})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Текст вопроса</label>
+                    <input type="text" class="form-control" value="{{ question.content }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Тип вопроса</label>
+                    <select class="form-select" onchange="handleQuestionTypeChange(this)">
+                        <option value="text" {% if question.type == 'text' %}selected{% endif %}>Развернутый ответ</option>
+                        <option value="choice" {% if question.type == 'choice' %}selected{% endif %}>Один вариант</option>
+                        <option value="multiple" {% if question.type == 'multiple' %}selected{% endif %}>Несколько вариантов</option>
+                    </select>
+                </div>
+                <div class="options-container" {% if question.type not in ['choice', 'multiple'] %}style="display: none"{% endif %}>
+                    {% for option in question.options %}
+                    <div class="mb-2">
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="{{ option }}" placeholder="Вариант {{ loop.index }}">
+                            <button type="button" class="btn btn-outline-danger hover-scale" onclick="removeOption(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2 hover-scale" onclick="addOption(this)">
+                        <i class="fas fa-plus"></i> Добавить вариант
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="text-center mb-4">
+        <button type="button" class="btn btn-primary hover-scale" onclick="addQuestion()">
+            <i class="fas fa-plus"></i> Добавить вопрос
+        </button>
+        <button type="button" class="btn btn-success hover-scale ms-2" onclick="saveSurvey()">
+            <i class="fas fa-save"></i> Сохранить опрос
+        </button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function createQuestionCard(index) {
+    return `
+        <div class="card mb-4 question-block fade-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Вопрос ${index + 1}</h5>
+                <button type="button" class="btn btn-danger btn-sm hover-scale" onclick="deleteQuestion(${index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Текст вопроса</label>
+                    <input type="text" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Тип вопроса</label>
+                    <select class="form-select" onchange="handleQuestionTypeChange(this)">
+                        <option value="text">Развернутый ответ</option>
+                        <option value="choice">Один вариант</option>
+                        <option value="multiple">Несколько вариантов</option>
+                    </select>
+                </div>
+                <div class="options-container" style="display: none">
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2 hover-scale" onclick="addOption(this)">
+                        <i class="fas fa-plus"></i> Добавить вариант
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function addQuestion() {
+    const container = document.getElementById('questionContainer');
+    const index = container.children.length;
+    container.insertAdjacentHTML('beforeend', createQuestionCard(index));
+}
+
+function deleteQuestion(index) {
+    if (confirm('Вы уверены, что хотите удалить этот вопрос?')) {
+        const questions = document.getElementsByClassName('question-block');
+        questions[index].remove();
+        updateQuestionNumbers();
+    }
+}
+
+function updateQuestionNumbers() {
+    const questions = document.getElementsByClassName('question-block');
+    for (let i = 0; i < questions.length; i++) {
+        questions[i].querySelector('h5').textContent = `Вопрос ${i + 1}`;
+    }
+}
+
+function handleQuestionTypeChange(select) {
+    const optionsContainer = select.closest('.card-body').querySelector('.options-container');
+    optionsContainer.style.display = ['choice', 'multiple'].includes(select.value) ? 'block' : 'none';
+}
+
+function addOption(button) {
+    const container = button.closest('.options-container');
+    const index = container.getElementsByClassName('input-group').length + 1;
+    const optionHtml = `
+        <div class="mb-2">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Вариант ${index}">
+                <button type="button" class="btn btn-outline-danger hover-scale" onclick="removeOption(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    button.insertAdjacentHTML('beforebegin', optionHtml);
+}
+
+function removeOption(button) {
+    button.closest('.mb-2').remove();
+}
+
+function saveSurvey() {
+    const questions = [];
+    document.querySelectorAll('.question-block').forEach(questionBlock => {
+        const question = {
+            content: questionBlock.querySelector('input[type="text"]').value,
+            type: questionBlock.querySelector('select').value,
+            options: []
+        };
+
+        if (['choice', 'multiple'].includes(question.type)) {
+            questionBlock.querySelectorAll('.options-container .input-group input').forEach(input => {
+                if (input.value.trim()) {
+                    question.options.push(input.value.trim());
+                }
+            });
+        }
+
+        questions.push(question);
+    });
+
+    const surveyData = {
+        title: document.querySelector('h2').textContent.replace('Редактирование опроса: ', '').trim(),
+        description: "{{ survey.description }}",
+        questions: questions
+    };
+
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(surveyData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Опрос успешно сохранен!');
+            window.location.href = '/';
+        } else {
+            alert('Произошла ошибка при сохранении опроса');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при сохранении опроса');
+    });
+}
+</script>
+
+<style>
+.fade-in {
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Эффекты при наведении */
+.hover-scale {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.question-block {
+    transition: all 0.3s ease;
+}
+
+.question-block:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
